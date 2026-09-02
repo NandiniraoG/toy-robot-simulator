@@ -1,0 +1,16 @@
+{
+  "name": "toy-robot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Toy Robot Simulator - a robot moves on a 5x5 tabletop via PLACE/MOVE/LEFT/RIGHT/REPORT commands without falling off.",
+  "scripts": {
+    "start": "node --experimental-strip-types src/cli.ts",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "@types/node": "^22.0.0"
+  }
+}
