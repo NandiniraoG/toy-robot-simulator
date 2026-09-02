@@ -1,19 +1,16 @@
 {
-  "name": "toy-robot-simulator",
+  "name": "toy-robot",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Toy Robot Simulator exercise — TypeScript implementation.",
+  "description": "Toy Robot Simulator - a robot moves on a 5x5 tabletop via PLACE/MOVE/LEFT/RIGHT/REPORT commands without falling off.",
   "scripts": {
-    "toy-robot": "node --experimental-strip-types src/cli.ts",
-    "test": "vitest run",
-    "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit"
+    "start": "node --experimental-strip-types src/cli.ts",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.0",
-    "@types/node": "^22.10.2",
-    "typescript": "^5.7.2",
-    "vitest": "^3.0.0"
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "@types/node": "^22.0.0"
   }
 }

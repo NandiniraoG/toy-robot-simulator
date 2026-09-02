@@ -1,96 +1,69 @@
 # Toy Robot Simulator
 
-TypeScript implementation of the toy robot simulator exercise: a robot moves
-on a 5x5 tabletop and must never be allowed to fall off, in response to
-`PLACE`, `MOVE`, `LEFT`, `RIGHT`, and `REPORT` commands.
+TypeScript implementation of the classic 5 x 5 tabletop toy robot exercise.
+
+A toy robot moves on a 5 x 5 unit tabletop. There are no obstructions.
+The robot is free to roam the surface but must be prevented from falling
+off — any movement that would result in it falling is simply ignored.
+
+## Commands
+
+- `PLACE X,Y,F` — places the robot at `(X, Y)` facing `F` (`NORTH`, `SOUTH`,
+  `EAST`, or `WEST`). The first valid command must be a `PLACE`; anything
+  before it is ignored. A `PLACE` outside the 5x5 grid is also ignored.
+- `MOVE` — moves the robot one unit forward in the direction it's facing.
+- `LEFT` / `RIGHT` — rotates the robot 90° without changing its position.
+- `REPORT` — announces `X,Y,F` (via stdout).
+
+Any command that isn't a valid `PLACE`/`MOVE`/`LEFT`/`RIGHT`/`REPORT` is
+silently ignored, so a well-formed run is never derailed by garbage input.
 
 ## Design
 
-The problem is split into four small, single-responsibility classes in
-[`src/simulator.ts`](src/simulator.ts):
+- `Tabletop` — owns the grid boundary and answers whether a coordinate is
+  on it. Nothing else needs to know how big the table is.
+- `CommandParser` — turns a raw line of text into a typed `Command` (a
+  discriminated union) or `null`. Parsing is entirely separate from what a
+  command *does*.
+- `ToyRobot` — the state machine: current placement (or none, before the
+  first `PLACE`), and the only thing allowed to change it. Placement is
+  copied rather than mutated in place, so nothing outside the class can
+  hold a stale reference and corrupt it.
+- `ToyRobotSimulator` — wires a parser and a robot together and runs a
+  whole script of commands, collecting `REPORT` output.
 
-- **`Tabletop`** — owns the surface dimensions and the one rule that matters
-  for safety: whether a given `(x, y)` is on the table (`contains`).
-- **`ToyRobot`** — owns the robot's own state (position + facing), which is
-  kept private (`placement`) and only ever mutated through methods that
-  consult the `Tabletop` first. It has no idea how commands are parsed.
-- **`CommandParser`** — turns one line of raw text into a typed `Command`
-  (or `null` if it isn't recognised), completely decoupled from execution.
-- **`ToyRobotSimulator`** — composes a parser and a robot, and is the only
-  class client code (the CLI, or tests) needs to talk to.
+## Install
 
-This separation means the "don't fall off the table" rule lives in exactly
-one place (`Tabletop.contains`), used by both `place()` and `move()`, so a
-placement and a move can never disagree about what's legal.
-
-Invalid input is never thrown as an error — an unrecognised command, a
-malformed `PLACE`, or a `PLACE`/`MOVE` that would take the robot off the
-table is simply ignored, and the simulator keeps processing the rest of the
-input, per the spec.
+```bash
+npm install
+```
 
 ## Run
 
 From a command file:
 
-```sh
-npm install
-npm run toy-robot -- examples/example-c.txt
+```bash
+npm start -- examples/example-c.txt
 ```
 
 From standard input:
 
-```sh
-cat examples/example-a.txt | npm run toy-robot
+```bash
+cat examples/example-a.txt | npm start
 ```
+
+(On Windows PowerShell: `Get-Content examples/example-a.txt | npm start`.)
 
 ## Test
 
-```sh
-npm install
+```bash
 npm test
 ```
 
-9 tests in [`tests/toy-robot.test.ts`](tests/toy-robot.test.ts) cover:
+## Examples
 
-- the three official worked examples (a, b, c)
-- commands before the first valid `PLACE` being discarded
-- an invalid `PLACE` (off-table) being ignored while a later valid `PLACE`
-  still works
-- a second, valid `PLACE` mid-run repositioning the robot
-- malformed/unknown commands (`JUMP`, `PLACE 1,1,UP`, `MOVE 2`) being ignored
-- case-insensitive parsing and tolerance for extra spacing
-- a unit-level check that `ToyRobot` itself refuses to move off the table
-
-## Example data
-
-- [`examples/example-a.txt`](examples/example-a.txt) → `0,1,NORTH`
-- [`examples/example-b.txt`](examples/example-b.txt) → `0,0,WEST`
-- [`examples/example-c.txt`](examples/example-c.txt) → `3,3,NORTH`
-- [`examples/boundary-and-recovery.txt`](examples/boundary-and-recovery.txt) —
-  covers ignoring commands before a `PLACE`, an out-of-bounds `PLACE`, a
-  `MOVE` blocked at the table edge, and recovering with a fresh `PLACE`
-
-## Web demo (optional — not required by the exercise)
-
-[`web/index.html`](web/index.html) is a self-contained, dependency-free
-clickable UI over the same rules (ported 1:1, not imported, since it's a
-plain static page with no build step). Open it directly in a browser — no
-server needed. The exercise spec doesn't call for graphical output; this
-exists purely as a way to poke at the simulator interactively.
-
-### End-to-end tests (Playwright, Page Object Model)
-
-```sh
-npx playwright install chromium   # one-time browser download
-npm run test:e2e
-```
-
-[`tests/e2e/pages/toy-robot.page.ts`](tests/e2e/pages/toy-robot.page.ts) is
-the Page Object Model — it wraps the page's selectors behind
-robot-vocabulary methods (`placeAt`, `move`, `turnLeft`, `runCommand`,
-`currentState`, …), so [`tests/e2e/toy-robot.spec.ts`](tests/e2e/toy-robot.spec.ts)
-reads in terms of robot commands, not DOM details. 12 tests cover placement
-by click, MOVE/LEFT/RIGHT, a MOVE blocked at the table edge, malformed and
-pre-PLACE commands being ignored, REPORT, and the three spec examples driven
-through the free-text command box. Tests open the HTML file directly via a
-`file://` URL — there's no dev server to start.
+- `examples/example-a.txt` outputs `0,1,NORTH`
+- `examples/example-b.txt` outputs `0,0,WEST`
+- `examples/example-c.txt` outputs `3,3,NORTH`
+- `examples/boundary-and-recovery.txt` covers invalid placement, blocked
+  moves at the table edge, and recovering with a fresh `PLACE`
