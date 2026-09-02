@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toy Robot Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f4ef;
+    --panel: #ffffff;
+    --panel-soft: #fbfaf6;
+    --ink: #22241f;
+    --muted: #85806f;
+    --line: #e6e2d6;
+    --accent: #2f6b5e;
+    --accent-soft: #e4ede9;
+    --gold: #b9873f;
+    --accent-ink: #fbfaf6;
+    --shadow: 0 1px 2px rgba(30,28,18,0.04), 0 16px 32px -18px rgba(30,28,18,0.28);
+    --danger: #a8492f;
+    --robot-body: #3a8672;
+    --robot-body-dk: #244f43;
+    --robot-face: #fbfaf6;
+    --cell: #edeade;
+    --cell-hi: #dde6df;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a;
+      --panel: #1b1d22;
+      --panel-soft: #202329;
+      --ink: #eeece4;
+      --muted: #9a9689;
+      --line: #2c2f33;
+      --accent: #6cbaa4;
+      --accent-soft: #1f2f2a;
+      --gold: #d9ab6a;
+      --accent-ink: #10201b;
+      --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 18px 34px -18px rgba(0,0,0,0.65);
+      --danger: #e0916f;
+      --robot-body: #4fa88e;
+      --robot-body-dk: #2c584a;
+      --robot-face: #14161a;
+      --cell: #23262b;
+      --cell-hi: #263733;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    position: relative;
+    background:
+      radial-gradient(ellipse 900px 500px at 85% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    font: 15px/1.55 "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 56px 20px;
+  }
+  main {
+    width: 100%;
+    max-width: 900px;
+    display: grid;
+    grid-template-columns: minmax(300px, 400px) 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  @media (max-width: 720px) {
+    main { grid-template-columns: 1fr; }
+  }
+  h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 27px;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 22px; }
+
+  .grid-wrap {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+  }
+  #board {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 1px;
+    width: 100%;
+    height: 100%;
+    background: var(--line);
+  }
+  .cell {
+    background: var(--cell);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .cell:hover { background: var(--cell-hi); }
+  .cell .coord {
+    position: absolute;
+    bottom: 4px;
+    right: 6px;
+    font-size: 9px;
+    color: var(--muted);
+    opacity: 0.55;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #robotLayer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .robot {
+    position: absolute;
+    width: 20%;
+    height: 20%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: left 0.32s cubic-bezier(.4,0,.2,1), top 0.32s cubic-bezier(.4,0,.2,1), transform 0.32s cubic-bezier(.4,0,.2,1);
+    filter: drop-shadow(0 6px 10px rgba(20,20,10,0.25));
+  }
+  .robot svg { width: 80%; height: 80%; }
+
+  .compass {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 10.5px;
+    margin-top: 12px;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+  }
+  .compass .n-s { text-align: center; flex: 1; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  fieldset {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin: 0 0 14px;
+    padding: 15px;
+    background: var(--panel-soft);
+  }
+  fieldset:last-child { margin-bottom: 0; }
+  legend {
+    color: var(--muted);
+    font-size: 10.5px;
+    padding: 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-weight: 600;
+  }
+  legend .hint { text-transform: none; letter-spacing: normal; font-weight: 400; }
+  .place-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  select, input[type=text] {
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font: inherit;
+  }
+  select:focus, input[type=text]:focus, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  input[type=text] { flex: 1; min-width: 160px; }
+  button {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    border-radius: 9px;
+    padding: 9px 12px;
+    font: 600 12.5px/1 "Inter", sans-serif;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: transform 0.08s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button:active { transform: scale(0.96); }
+  button.primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+  }
+  button.primary:hover { filter: brightness(1.08); color: var(--accent-ink); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-row button { flex: 1; min-width: 68px; }
+  #cmdForm { display: flex; gap: 8px; margin-top: 10px; }
+  #report {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 18px;
+    font-weight: 600;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 12px 14px;
+    color: var(--accent);
+  }
+  #log {
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 9px 11px;
+    height: 128px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+  .log-ignored { color: var(--danger); }
+  .log-cmd { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <h1>Toy Robot <em>Simulator</em></h1>
+    <p class="sub">5&times;5 tabletop &middot; click a cell to place the robot</p>
+    <div class="grid-wrap">
+      <div id="board">
+        <div id="grid"></div>
+        <div id="robotLayer"></div>
+      </div>
+      <div class="compass"><span>WEST</span><span class="n-s">SOUTH &harr; NORTH</span><span>EAST</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <fieldset>
+      <legend>Place</legend>
+      <div class="place-row">
+        <select id="facingSelect">
+          <option>NORTH</option>
+          <option>EAST</option>
+          <option>SOUTH</option>
+          <option>WEST</option>
+        </select>
+        <span id="pendingCoord" style="color:var(--muted); font-size:13px;">click a cell&hellip;</span>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Commands</legend>
+      <div class="btn-row">
+        <button id="btnMove">MOVE</button>
+        <button id="btnLeft">LEFT</button>
+        <button id="btnRight">RIGHT</button>
+        <button id="btnReport" class="primary">REPORT</button>
+      </div>
+      <form id="cmdForm">
+        <input type="text" id="cmdInput" placeholder="e.g. PLACE 1,2,EAST" autocomplete="off">
+        <button type="submit">Run</button>
+      </form>
+    </fieldset>
+
+    <fieldset>
+      <legend>Current state <span class="hint">&mdash; live</span></legend>
+      <div id="report">(not placed yet)</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Command log</legend>
+      <div id="log"></div>
+    </fieldset>
+  </div>
+</main>
+
+<script>
+// --- Domain logic, ported 1:1 from src/robot.ts and src/simulator.ts ---
+const DIRECTIONS = ['NORTH', 'EAST', 'SOUTH', 'WEST'];
+const LEFT_OF  = { NORTH: 'WEST', WEST: 'SOUTH', SOUTH: 'EAST', EAST: 'NORTH' };
+const RIGHT_OF = { NORTH: 'EAST', EAST: 'SOUTH', SOUTH: 'WEST', WEST: 'NORTH' };
+const STEP     = { NORTH: [0, 1], EAST: [1, 0], SOUTH: [0, -1], WEST: [-1, 0] };
+const SIZE = 5;
+
+function isDirection(v) { return DIRECTIONS.includes(v); }
+
+class Table {
+  constructor(size = SIZE) { this.size = size; }
+  contains(x, y) {
+    return Number.isSafeInteger(x) && Number.isSafeInteger(y) &&
+      x >= 0 && y >= 0 && x < this.size && y < this.size;
+  }
+}
+
+class Robot {
+  #table; #position;
+  constructor(table = new Table()) { this.#table = table; }
+  // Every mutator below returns whether it actually took effect, so the UI
+  // can report "ignored" from a real success/failure signal instead of
+  // diffing report strings (which falsely flags a same-spot re-PLACE as
+  // ignored even though it succeeded).
+  place(x, y, facing) {
+    if (this.#table.contains(x, y) && isDirection(facing)) {
+      this.#position = { x, y, facing };
+      return true;
+    }
+    return false;
+  }
+  move() {
+    if (!this.#position) return false;
+    const { x, y, facing } = this.#position;
+    const [dx, dy] = STEP[facing];
+    return this.place(x + dx, y + dy, facing);
+  }
+  left()  {
+    if (!this.#position) return false;
+    this.#position = { ...this.#position, facing: LEFT_OF[this.#position.facing] };
+    return true;
+  }
+  right() {
+    if (!this.#position) return false;
+    this.#position = { ...this.#position, facing: RIGHT_OF[this.#position.facing] };
+    return true;
+  }
+  report() {
+    if (!this.#position) return undefined;
+    const { x, y, facing } = this.#position;
+    return `${x},${y},${facing}`;
+  }
+  get position() { return this.#position; }
+}
+
+class Simulator {
+  #robot;
+  constructor(robot = new Robot()) { this.#robot = robot; }
+  // Returns { success, output }: `success` says whether the command took
+  // effect (false means it was ignored); `output` carries REPORT's text.
+  execute(line) {
+    const command = line.trim();
+    switch (command) {
+      case 'MOVE': return { success: this.#robot.move() };
+      case 'LEFT': return { success: this.#robot.left() };
+      case 'RIGHT': return { success: this.#robot.right() };
+      case 'REPORT': {
+        const output = this.#robot.report();
+        return { success: output !== undefined, output };
+      }
+    }
+    const match = /^PLACE\s+(-?\d+)\s*,\s*(-?\d+)\s*,\s*([A-Z]+)$/.exec(command);
+    if (!match) return { success: false };
+    const [, x, y, facing] = match;
+    if (facing === undefined || !isDirection(facing)) return { success: false };
+    return { success: this.#robot.place(Number(x), Number(y), facing) };
+  }
+  get robot() { return this.#robot; }
+}
+
+// --- UI wiring ---
+const robot = new Robot();
+const sim = new Simulator(robot);
+const grid = document.getElementById('grid');
+const robotLayer = document.getElementById('robotLayer');
+const reportEl = document.getElementById('report');
+const logEl = document.getElementById('log');
+const pendingCoord = document.getElementById('pendingCoord');
+const facingSelect = document.getElementById('facingSelect');
+
+// Build 5x5 grid, row 0 (NORTH-most / y=4) at top, WEST (x=0) at left.
+for (let row = 0; row < SIZE; row++) {
+  const y = SIZE - 1 - row;
+  for (let x = 0; x < SIZE; x++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.x = x;
+    cell.dataset.y = y;
+    const coord = document.createElement('span');
+    coord.className = 'coord';
+    coord.textContent = `${x},${y}`;
+    cell.appendChild(coord);
+    cell.addEventListener('click', () => {
+      const facing = facingSelect.value;
+      runLine(`PLACE ${x},${y},${facing}`);
+    });
+    grid.appendChild(cell);
+  }
+}
+
+// Toy robot glyph: rounded body/head, antenna + eyes mark the front.
+// Facing NORTH = unrotated (front points up); other facings rotate the whole glyph.
+const ROBOT_SVG = `
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="52" r="45" fill="var(--panel)" opacity="0.9"/>
+  <line x1="50" y1="18" x2="50" y2="4" stroke="var(--robot-body-dk)" stroke-width="4.5" stroke-linecap="round"/>
+  <circle cx="50" cy="4" r="5" fill="var(--gold)"/>
+  <rect x="16" y="18" width="68" height="66" rx="24" fill="var(--robot-body)" stroke="var(--robot-body-dk)" stroke-width="4"/>
+  <circle cx="35" cy="44" r="7.5" fill="var(--robot-face)"/>
+  <circle cx="65" cy="44" r="7.5" fill="var(--robot-face)"/>
+  <circle cx="35" cy="44" r="3" fill="var(--robot-body-dk)"/>
+  <circle cx="65" cy="44" r="3" fill="var(--robot-body-dk)"/>
+  <rect x="38" y="58" width="24" height="5" rx="2.5" fill="var(--robot-face)" opacity="0.9"/>
+  <circle cx="50" cy="74" r="6.5" fill="var(--gold)"/>
+</svg>`;
+
+const ROTATION = { NORTH: 0, EAST: 90, SOUTH: 180, WEST: 270 };
+let robotEl = null;
+
+function render() {
+  const pos = robot.position;
+  if (!pos) {
+    if (robotEl) { robotEl.remove(); robotEl = null; }
+    reportEl.textContent = '(not placed yet)';
+    pendingCoord.textContent = 'click a cell…';
+    return;
+  }
+  if (!robotEl) {
+    robotEl = document.createElement('div');
+    robotEl.className = 'robot';
+    robotEl.innerHTML = ROBOT_SVG;
+    robotLayer.appendChild(robotEl);
+  }
+  const leftPct = (pos.x / SIZE) * 100;
+  const topPct = ((SIZE - 1 - pos.y) / SIZE) * 100;
+  robotEl.style.left = `${leftPct}%`;
+  robotEl.style.top = `${topPct}%`;
+  robotEl.style.transform = `rotate(${ROTATION[pos.facing]}deg)`;
+  pendingCoord.textContent = `at ${pos.x},${pos.y},${pos.facing}`;
+  // Live status readout, distinct from the command log below: the CLI/domain
+  // rules only ever "print" on an explicit REPORT command, but the visual
+  // state panel stays live so the UI doesn't look stale after MOVE/LEFT/RIGHT.
+  reportEl.textContent = `${pos.x},${pos.y},${pos.facing}`;
+}
+
+function log(text, cls) {
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = text;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function runLine(line) {
+  const result = sim.execute(line);
+  log('> ' + line, 'log-cmd');
+  if (result.output !== undefined) {
+    log(result.output);
+  } else if (!result.success) {
+    log('(ignored)', 'log-ignored');
+  }
+  render();
+}
+
+document.getElementById('btnMove').addEventListener('click', () => runLine('MOVE'));
+document.getElementById('btnLeft').addEventListener('click', () => runLine('LEFT'));
+document.getElementById('btnRight').addEventListener('click', () => runLine('RIGHT'));
+document.getElementById('btnReport').addEventListener('click', () => runLine('REPORT'));
+
+document.getElementById('cmdForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const input = document.getElementById('cmdInput');
+  const value = input.value.toUpperCase();
+  if (!value.trim()) return;
+  runLine(value);
+  input.value = '';
+});
+
+render();
+</script>
+</body>
+</html>

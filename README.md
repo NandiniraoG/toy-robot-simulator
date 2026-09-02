@@ -69,3 +69,28 @@ npm test
 - [`examples/boundary-and-recovery.txt`](examples/boundary-and-recovery.txt) —
   covers ignoring commands before a `PLACE`, an out-of-bounds `PLACE`, a
   `MOVE` blocked at the table edge, and recovering with a fresh `PLACE`
+
+## Web demo (optional — not required by the exercise)
+
+[`web/index.html`](web/index.html) is a self-contained, dependency-free
+clickable UI over the same rules (ported 1:1, not imported, since it's a
+plain static page with no build step). Open it directly in a browser — no
+server needed. The exercise spec doesn't call for graphical output; this
+exists purely as a way to poke at the simulator interactively.
+
+### End-to-end tests (Playwright, Page Object Model)
+
+```sh
+npx playwright install chromium   # one-time browser download
+npm run test:e2e
+```
+
+[`tests/e2e/pages/toy-robot.page.ts`](tests/e2e/pages/toy-robot.page.ts) is
+the Page Object Model — it wraps the page's selectors behind
+robot-vocabulary methods (`placeAt`, `move`, `turnLeft`, `runCommand`,
+`currentState`, …), so [`tests/e2e/toy-robot.spec.ts`](tests/e2e/toy-robot.spec.ts)
+reads in terms of robot commands, not DOM details. 12 tests cover placement
+by click, MOVE/LEFT/RIGHT, a MOVE blocked at the table edge, malformed and
+pre-PLACE commands being ignored, REPORT, and the three spec examples driven
+through the free-text command box. Tests open the HTML file directly via a
+`file://` URL — there's no dev server to start.
