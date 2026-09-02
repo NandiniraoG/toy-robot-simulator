@@ -1,0 +1,17 @@
+{
+  "name": "toy-robot-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Toy Robot Simulator exercise — TypeScript implementation.",
+  "scripts": {
+    "toy-robot": "node --experimental-strip-types src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}
