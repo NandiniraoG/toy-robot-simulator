@@ -3,11 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.18.0" },
+  "description": "Toy Robot Simulator exercise — TypeScript implementation.",
   "scripts": {
-    "start": "node src/cli.ts",
-    "test": "node --test test/*.test.mjs",
+    "toy-robot": "node --experimental-strip-types src/cli.ts",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },
-  "devDependencies": { "@types/node": "^22.0.0", "typescript": "~5.8.3" }
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
 }

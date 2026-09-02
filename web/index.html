@@ -64,9 +64,9 @@
   }
   main {
     width: 100%;
-    max-width: 900px;
+    max-width: 1000px;
     display: grid;
-    grid-template-columns: minmax(300px, 400px) 1fr;
+    grid-template-columns: minmax(340px, 500px) 1fr;
     gap: 32px;
     align-items: start;
   }
@@ -144,16 +144,26 @@
   }
   .robot svg { width: 80%; height: 80%; }
 
-  .compass {
+  .board-row {
     display: flex;
-    justify-content: space-between;
-    color: var(--muted);
-    font-size: 10.5px;
-    margin-top: 12px;
-    letter-spacing: 0.1em;
-    font-weight: 500;
+    align-items: center;
+    gap: 8px;
   }
-  .compass .n-s { text-align: center; flex: 1; }
+  .board-row #board { flex: 1; min-width: 0; }
+  .compass-label {
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+  }
+  .compass-north, .compass-south { text-align: center; }
+  .compass-north { margin-bottom: 10px; }
+  .compass-south { margin-top: 10px; }
+  .compass-west, .compass-east {
+    flex-shrink: 0;
+    width: 38px;
+    text-align: center;
+  }
 
   .panel {
     background: var(--panel);
@@ -246,11 +256,16 @@
     <h1>Toy Robot <em>Simulator</em></h1>
     <p class="sub">5&times;5 tabletop &middot; click a cell to place the robot</p>
     <div class="grid-wrap">
-      <div id="board">
-        <div id="grid"></div>
-        <div id="robotLayer"></div>
+      <div class="compass-label compass-north">NORTH</div>
+      <div class="board-row">
+        <div class="compass-label compass-west">WEST</div>
+        <div id="board">
+          <div id="grid"></div>
+          <div id="robotLayer"></div>
+        </div>
+        <div class="compass-label compass-east">EAST</div>
       </div>
-      <div class="compass"><span>WEST</span><span class="n-s">SOUTH &harr; NORTH</span><span>EAST</span></div>
+      <div class="compass-label compass-south">SOUTH</div>
     </div>
   </div>
 
@@ -315,19 +330,33 @@ class Table {
 class Robot {
   #table; #position;
   constructor(table = new Table()) { this.#table = table; }
+  // Every mutator below returns whether it actually took effect, so the UI
+  // can report "ignored" from a real success/failure signal instead of
+  // diffing report strings (which falsely flags a same-spot re-PLACE as
+  // ignored even though it succeeded).
   place(x, y, facing) {
     if (this.#table.contains(x, y) && isDirection(facing)) {
       this.#position = { x, y, facing };
+      return true;
     }
+    return false;
   }
   move() {
-    if (!this.#position) return;
+    if (!this.#position) return false;
     const { x, y, facing } = this.#position;
     const [dx, dy] = STEP[facing];
-    this.place(x + dx, y + dy, facing);
+    return this.place(x + dx, y + dy, facing);
   }
-  left()  { if (this.#position) this.#position = { ...this.#position, facing: LEFT_OF[this.#position.facing] }; }
-  right() { if (this.#position) this.#position = { ...this.#position, facing: RIGHT_OF[this.#position.facing] }; }
+  left()  {
+    if (!this.#position) return false;
+    this.#position = { ...this.#position, facing: LEFT_OF[this.#position.facing] };
+    return true;
+  }
+  right() {
+    if (!this.#position) return false;
+    this.#position = { ...this.#position, facing: RIGHT_OF[this.#position.facing] };
+    return true;
+  }
   report() {
     if (!this.#position) return undefined;
     const { x, y, facing } = this.#position;
@@ -339,20 +368,24 @@ class Robot {
 class Simulator {
   #robot;
   constructor(robot = new Robot()) { this.#robot = robot; }
+  // Returns { success, output }: `success` says whether the command took
+  // effect (false means it was ignored); `output` carries REPORT's text.
   execute(line) {
     const command = line.trim();
     switch (command) {
-      case 'MOVE': this.#robot.move(); return;
-      case 'LEFT': this.#robot.left(); return;
-      case 'RIGHT': this.#robot.right(); return;
-      case 'REPORT': return this.#robot.report();
+      case 'MOVE': return { success: this.#robot.move() };
+      case 'LEFT': return { success: this.#robot.left() };
+      case 'RIGHT': return { success: this.#robot.right() };
+      case 'REPORT': {
+        const output = this.#robot.report();
+        return { success: output !== undefined, output };
+      }
     }
     const match = /^PLACE\s+(-?\d+)\s*,\s*(-?\d+)\s*,\s*([A-Z]+)$/.exec(command);
-    if (!match) return;
+    if (!match) return { success: false };
     const [, x, y, facing] = match;
-    if (facing !== undefined && isDirection(facing)) {
-      this.#robot.place(Number(x), Number(y), facing);
-    }
+    if (facing === undefined || !isDirection(facing)) return { success: false };
+    return { success: this.#robot.place(Number(x), Number(y), facing) };
   }
   get robot() { return this.#robot; }
 }
@@ -441,13 +474,11 @@ function log(text, cls) {
 }
 
 function runLine(line) {
-  const before = robot.report();
   const result = sim.execute(line);
-  const after = robot.report();
   log('> ' + line, 'log-cmd');
-  if (result !== undefined) {
-    log(result);
-  } else if (before === after) {
+  if (result.output !== undefined) {
+    log(result.output);
+  } else if (!result.success) {
     log('(ignored)', 'log-ignored');
   }
   render();

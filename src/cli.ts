@@ -1,28 +1,23 @@
-import { createReadStream } from 'node:fs';
-import { createInterface } from 'node:readline';
-import { Simulator } from './simulator.ts';
+import { readFile } from "node:fs/promises";
+import { ToyRobotSimulator } from "./simulator.ts";
 
-async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  if (args.length > 1) {
-    throw new Error('Usage: node src/cli.ts [commands-file]');
-  }
+const input = await readInput(process.argv[2]);
+const simulator = new ToyRobotSimulator();
 
-  const input = args[0] === undefined ? process.stdin : createReadStream(args[0], 'utf8');
-  const lines = createInterface({ input, crlfDelay: Infinity });
-  const simulator = new Simulator();
-  try {
-    for await (const line of lines) {
-      const output = simulator.execute(line);
-      if (output !== undefined) process.stdout.write(`${output}\n`);
-    }
-  } finally {
-    lines.close();
-    if (input !== process.stdin) input.destroy();
-  }
+for (const output of simulator.run(input)) {
+  console.log(output);
 }
 
-main().catch((error: unknown) => {
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
-  process.exitCode = 1;
-});
+async function readInput(filePath?: string): Promise<string> {
+  if (filePath) {
+    return readFile(filePath, "utf8");
+  }
+
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of process.stdin) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  return Buffer.concat(chunks).toString("utf8");
+}

@@ -1,119 +1,96 @@
 # Toy Robot Simulator
 
-A TypeScript command-line application for a robot on a 5 × 5 tabletop.
+TypeScript implementation of the toy robot simulator exercise: a robot moves
+on a 5x5 tabletop and must never be allowed to fall off, in response to
+`PLACE`, `MOVE`, `LEFT`, `RIGHT`, and `REPORT` commands.
 
-## Requirements and quick start
+## Design
 
-Use Node.js 22.18+ (or Node.js 24+), with native TypeScript execution.
-No installation or build step is needed to run the application or tests.
+The problem is split into four small, single-responsibility classes in
+[`src/simulator.ts`](src/simulator.ts):
 
-From this directory:
+- **`Tabletop`** — owns the surface dimensions and the one rule that matters
+  for safety: whether a given `(x, y)` is on the table (`contains`).
+- **`ToyRobot`** — owns the robot's own state (position + facing), which is
+  kept private (`placement`) and only ever mutated through methods that
+  consult the `Tabletop` first. It has no idea how commands are parsed.
+- **`CommandParser`** — turns one line of raw text into a typed `Command`
+  (or `null` if it isn't recognised), completely decoupled from execution.
+- **`ToyRobotSimulator`** — composes a parser and a robot, and is the only
+  class client code (the CLI, or tests) needs to talk to.
 
-```sh
-node src/cli.ts examples/examples.txt
-node --test test/*.test.mjs
-```
+This separation means the "don't fall off the table" rule lives in exactly
+one place (`Tabletop.contains`), used by both `place()` and `move()`, so a
+placement and a move can never disagree about what's legal.
 
-Example output:
+Invalid input is never thrown as an error — an unrecognised command, a
+malformed `PLACE`, or a `PLACE`/`MOVE` that would take the robot off the
+table is simply ignored, and the simulator keeps processing the rest of the
+input, per the spec.
 
-```text
-0,1,NORTH
-0,0,WEST
-3,3,NORTH
-```
+## Run
 
-To read standard input, run `node src/cli.ts`, enter one command per line,
-and end input using Ctrl+D on macOS/Linux or Ctrl+Z then Enter on Windows.
-REPORT prints immediately. Shell redirection also works:
-
-```sh
-node src/cli.ts < examples/edge-cases.txt
-```
-
-Equivalent npm shortcuts are `npm start -- examples/examples.txt` and `npm test`.
-Optional static checking requires the development dependencies:
+From a command file:
 
 ```sh
 npm install
-npm run typecheck
+npm run toy-robot -- examples/example-c.txt
 ```
 
-Native execution strips types; it does not perform static checking.
+From standard input:
 
-## Commands and decisions
-
-- `PLACE X,Y,F`: places or repositions the robot. Coordinates must be integers
-  from 0 through 4, and F must be NORTH, SOUTH, EAST, or WEST.
-- `MOVE`: advances one cell if the destination is inside the table.
-- `LEFT` / `RIGHT`: rotates 90 degrees without changing position.
-- `REPORT`: prints `X,Y,F`, followed by a newline.
-- Before a valid PLACE, all other commands produce no effect or output.
-- An invalid PLACE preserves any previously valid position and direction.
-- A rejected MOVE preserves state; later commands still execute normally.
-- Commands are uppercase and occupy one line each. Leading/trailing whitespace
-  and spaces around commas are accepted. Blank, unknown, and malformed commands
-  are silently ignored. Decimals and extra command arguments are rejected.
-- File/usage errors go to stderr and return exit code 1. Successful input
-  processing returns 0, even when individual commands were ignored.
-
-The origin is the southwest cell. NORTH increases Y; EAST increases X.
-
-## Structure
-
-```text
-src/robot.ts          Table bounds, direction types, and Robot behavior
-src/simulator.ts      Text command parsing and dispatch
-src/cli.ts            Streaming file/stdin input and stdout/stderr output
-test/robot.test.mjs   Domain and command-processing tests
-test/cli.test.mjs     End-to-end command-line tests
-examples/            Inputs and exact expected output files
+```sh
+cat examples/example-a.txt | npm run toy-robot
 ```
 
-## Design and interview discussion
+## Test
 
-**Encapsulation:** Robot keeps its position private using JavaScript private
-fields. The position is either absent or a complete valid state. Public methods
-are the only way to move or place it; callers cannot mutate coordinates directly.
+```sh
+npm install
+npm test
+```
 
-**Composition:** Robot receives a Table, and Simulator receives a Robot, with
-sensible defaults. This keeps boundaries separate from command parsing and
-allows a differently sized square table without changing movement logic.
+9 tests in [`tests/toy-robot.test.ts`](tests/toy-robot.test.ts) cover:
 
-**Single responsibilities:** Table answers whether a coordinate is valid;
-Robot applies domain rules; Simulator interprets text; the CLI handles I/O.
-The domain never reads files or prints, which makes it easy to test directly.
+- the three official worked examples (a, b, c)
+- commands before the first valid `PLACE` being discarded
+- an invalid `PLACE` (off-table) being ignored while a later valid `PLACE`
+  still works
+- a second, valid `PLACE` mid-run repositioning the robot
+- malformed/unknown commands (`JUMP`, `PLACE 1,1,UP`, `MOVE 2`) being ignored
+- case-insensitive parsing and tolerance for extra spacing
+- a unit-level check that `ToyRobot` itself refuses to move off the table
 
-**Validate before mutation:** PLACE commits only a valid state. MOVE calculates
-its candidate position and uses the same placement validation. This ensures
-both entry paths enforce the same boundary rule.
+## Example data
 
-**Direction handling:** Typed lookup tables express movement and rotation
-explicitly. A string union restricts valid directions at compile time; the
-parser also validates untrusted strings at runtime.
+- [`examples/example-a.txt`](examples/example-a.txt) → `0,1,NORTH`
+- [`examples/example-b.txt`](examples/example-b.txt) → `0,0,WEST`
+- [`examples/example-c.txt`](examples/example-c.txt) → `3,3,NORTH`
+- [`examples/boundary-and-recovery.txt`](examples/boundary-and-recovery.txt) —
+  covers ignoring commands before a `PLACE`, an out-of-bounds `PLACE`, a
+  `MOVE` blocked at the table edge, and recovering with a fresh `PLACE`
 
-**Pattern choice:** Composition and a small dispatcher are sufficient for five
-commands. Separate command classes, a factory, or inheritance would add machinery
-without helping the current requirements. Command objects could become useful
-if undo/redo or queued commands were introduced.
+## Web demo (optional — not required by the exercise)
 
-**Complexity:** Robot operations take constant time and state space. Parsing
-cost is linear in the command line's length. Input is processed line by line,
-so memory does not grow with the total number of commands.
+[`web/index.html`](web/index.html) is a self-contained, dependency-free
+clickable UI over the same rules (ported 1:1, not imported, since it's a
+plain static page with no build step). Open it directly in a browser — no
+server needed. The exercise spec doesn't call for graphical output; this
+exists purely as a way to poke at the simulator interactively.
 
-**Testing:** The suite covers the three supplied examples, commands before
-placement, all four directions and edges, recovery after rejected moves,
-rotations, repeated placements, invalid input, whitespace, and CLI file/stdin
-behavior. Tests use observable outcomes instead of inspecting private fields.
-Tests are JavaScript ES modules using Node's built-in test runner, directly
-importing the TypeScript source.
+### End-to-end tests (Playwright, Page Object Model)
 
-## Validation performed
+```sh
+npx playwright install chromium   # one-time browser download
+npm run test:e2e
+```
 
-- Node.js v24.19.0: all 43 automated tests passed.
-- Both fixture files matched their expected output via file input and stdin.
-- Static type-checking was not run in the preparation environment because the
-  TypeScript compiler was unavailable. Run the optional commands above locally.
-
-Before submitting, run the project locally and be comfortable explaining why
-coordinates stop at 4, why invalid placements preserve state, and how input
-validation differs from TypeScript's compile-time types.
+[`tests/e2e/pages/toy-robot.page.ts`](tests/e2e/pages/toy-robot.page.ts) is
+the Page Object Model — it wraps the page's selectors behind
+robot-vocabulary methods (`placeAt`, `move`, `turnLeft`, `runCommand`,
+`currentState`, …), so [`tests/e2e/toy-robot.spec.ts`](tests/e2e/toy-robot.spec.ts)
+reads in terms of robot commands, not DOM details. 12 tests cover placement
+by click, MOVE/LEFT/RIGHT, a MOVE blocked at the table edge, malformed and
+pre-PLACE commands being ignored, REPORT, and the three spec examples driven
+through the free-text command box. Tests open the HTML file directly via a
+`file://` URL — there's no dev server to start.
