@@ -75,40 +75,6 @@ export class ToyRobotPage extends BasePage {
     return TOY_ROBOT_LOCATORS[section];
   }
 
-  async goto(): Promise<void> {
-    await this.page.goto(pathToFileURL(PAGE_PATH).href);
-  }
-
-  async selectFacing(facing: Facing): Promise<void> {
-    await this.facingSelect.selectOption(facing);
-  }
-
-  async clickCell(x: number, y: number): Promise<void> {
-    await this.page.locator(`.cell[data-x="${x}"][data-y="${y}"]`).click();
-  }
-
-  /** Places the robot by selecting a facing, then clicking the target cell. */
-  async placeAt(x: number, y: number, facing: Facing): Promise<void> {
-    await this.selectFacing(facing);
-    await this.clickCell(x, y);
-  }
-
-  async move(): Promise<void> {
-    await this.moveButton.click();
-  }
-
-  async turnLeft(): Promise<void> {
-    await this.leftButton.click();
-  }
-
-  async turnRight(): Promise<void> {
-    await this.rightButton.click();
-  }
-
-  async report(): Promise<void> {
-    await this.reportButton.click();
-  }
-
   /**
    * Navigate to the Toy Robot page
    */
