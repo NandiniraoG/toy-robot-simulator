@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CommandParser, Tabletop, ToyRobot, ToyRobotSimulator } from "../src/simulator.ts";
+import { CommandParser, Tabletop, ToyRobotSimulator } from "../src/simulator.ts";
 
 describe("ToyRobotSimulator", () => {
   it("runs example A", () => {
@@ -85,16 +85,56 @@ RIGHT
 REPORT`),
     ).toEqual(["1,1,EAST"]);
   });
+
+  describe("boundaries", () => {
+    it.each([
+      ["0,0,SOUTH", "0,0,SOUTH"],
+      ["0,0,WEST", "0,0,WEST"],
+      ["4,4,NORTH", "4,4,NORTH"],
+      ["4,4,EAST", "4,4,EAST"],
+    ])("blocks MOVE off the tabletop for PLACE %s", (place, expected) => {
+      const simulator = new ToyRobotSimulator();
+
+      expect(simulator.run(`PLACE ${place}\nMOVE\nREPORT`)).toEqual([expected]);
+    });
+  });
+
+  describe("rotation", () => {
+    it.each(["LEFT", "RIGHT"])("four consecutive %s commands return to the original facing", (command) => {
+      const simulator = new ToyRobotSimulator();
+
+      expect(
+        simulator.run(`PLACE 2,2,NORTH\n${command}\n${command}\n${command}\n${command}\nREPORT`),
+      ).toEqual(["2,2,NORTH"]);
+    });
+
+    it.each([
+      ["LEFT", "NORTH", "WEST"],
+      ["LEFT", "WEST", "SOUTH"],
+      ["LEFT", "SOUTH", "EAST"],
+      ["LEFT", "EAST", "NORTH"],
+      ["RIGHT", "NORTH", "EAST"],
+      ["RIGHT", "EAST", "SOUTH"],
+      ["RIGHT", "SOUTH", "WEST"],
+      ["RIGHT", "WEST", "NORTH"],
+    ])("%s turns %s into %s", (command, from, to) => {
+      const simulator = new ToyRobotSimulator();
+
+      expect(simulator.run(`PLACE 2,2,${from}\n${command}\nREPORT`)).toEqual([`2,2,${to}`]);
+    });
+  });
 });
 
-describe("ToyRobot", () => {
-  it("does not move beyond the tabletop bounds", () => {
-    const robot = new ToyRobot(new Tabletop(5, 5));
+describe("Tabletop", () => {
+  it("bounds are honoured when the simulator is given a custom size", () => {
+    const simulator = new ToyRobotSimulator(new Tabletop(1, 1));
 
-    robot.place({ x: 0, y: 0, facing: "SOUTH" });
-    robot.move();
-
-    expect(robot.report()).toBe("0,0,SOUTH");
+    expect(
+      simulator.run(`PLACE 0,0,NORTH
+MOVE
+PLACE 1,0,NORTH
+REPORT`),
+    ).toEqual(["0,0,NORTH"]);
   });
 });
 

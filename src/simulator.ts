@@ -48,7 +48,7 @@ export class CommandParser {
         type: "PLACE",
         x: Number(placeMatch[1]),
         y: Number(placeMatch[2]),
-        facing: placeMatch[3].toUpperCase() as Direction,
+        facing: placeMatch[3]!.toUpperCase() as Direction,
       };
     }
 
@@ -116,7 +116,7 @@ export class ToyRobot {
     const nextIndex = (currentIndex + step + directions.length) % directions.length;
     this.placement = {
       ...this.placement,
-      facing: directions[nextIndex],
+      facing: directions[nextIndex]!,
     };
   }
 

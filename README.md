@@ -57,8 +57,24 @@ cat examples/example-a.txt | npm start
 ## Test
 
 ```bash
-npm test
+npm test        # unit tests (vitest)
+npm run typecheck  # strict TypeScript check, no emit
 ```
+
+`npm test` runs 23 unit tests against the domain classes described above:
+
+- the three official examples (`PLACE`/`MOVE`/`LEFT`/`RIGHT`/`REPORT`)
+- commands issued before the first valid `PLACE` (ignored)
+- an invalid `PLACE` followed by a later valid one repositioning the robot
+- malformed and case-insensitive command parsing
+- `MOVE` blocked at all four tabletop edges — `0,0` facing `SOUTH`/`WEST` and
+  `4,4` facing `NORTH`/`EAST` — via a parameterised test per edge
+- rotation: four consecutive `LEFT` (or `RIGHT`) commands returning to the
+  original facing, plus every individual `LEFT`/`RIGHT` compass transition
+- a custom, smaller `Tabletop` size honoured end-to-end through the simulator
+
+A Playwright suite under `tests/e2e/` (`npm run test:e2e`) drives the demo in
+`web/index.html` through a real browser as a separate, optional check.
 
 ## Examples
 
