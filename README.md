@@ -57,24 +57,27 @@ cat examples/example-a.txt | npm start
 ## Test
 
 ```bash
-npm test        # unit tests (vitest)
 npm run typecheck  # strict TypeScript check, no emit
+npm run test:e2e   # Playwright suite, driven through web/index.html
 ```
 
-`npm test` runs 23 unit tests against the domain classes described above:
+Test coverage lives entirely in `tests/e2e/specs/toy-robot.spec.ts`, driven
+through the real UI in `web/index.html` rather than by calling the domain
+classes directly — deliberately, since this is a browser/UI automation
+exercise. It's kept to five tests, each demonstrating a distinct part of the
+approach rather than exhaustively re-parametrizing every variant of every
+case:
 
-- the three official examples (`PLACE`/`MOVE`/`LEFT`/`RIGHT`/`REPORT`)
-- commands issued before the first valid `PLACE` (ignored)
-- an invalid `PLACE` followed by a later valid one repositioning the robot
-- malformed and case-insensitive command parsing
-- `MOVE` blocked at all four tabletop edges — `0,0` facing `SOUTH`/`WEST` and
-  `4,4` facing `NORTH`/`EAST` — via a parameterised test per edge
-- rotation: four consecutive `LEFT` (or `RIGHT`) commands returning to the
-  original facing, plus every individual `LEFT`/`RIGHT` compass transition
-- a custom, smaller `Tabletop` size honoured end-to-end through the simulator
+1. UI placement — clicking a cell places the robot
+2. Correctness against the three official spec examples, via typed commands
+3. A boundary case — `MOVE` blocked at the table edge
+4. Rotation — `LEFT`/`RIGHT`
+5. Negative/invalid input — before-`PLACE` commands, a malformed command,
+   and an out-of-bounds `PLACE` all ignored without corrupting robot state
 
-A Playwright suite under `tests/e2e/` (`npm run test:e2e`) drives the demo in
-`web/index.html` through a real browser as a separate, optional check.
+Other Playwright config/reporting details: `playwright.config.ts` runs
+Chromium only, retains traces/screenshots/video on failure, and produces an
+HTML report (`npm run test:e2e:report`).
 
 ## Examples
 
