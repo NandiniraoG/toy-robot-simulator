@@ -15,7 +15,6 @@ export const TOY_ROBOT_LOCATORS = {
     move: "#btnMove",
     left: "#btnLeft",
     right: "#btnRight",
-    report: "#btnReport",
     run: '#cmdForm button[type="submit"]',
   },
 

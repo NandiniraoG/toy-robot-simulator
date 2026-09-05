@@ -61,25 +61,19 @@ npm run typecheck  # strict TypeScript check, no emit
 npm run test:e2e   # Playwright suite, driven through web/index.html
 ```
 
-Test coverage lives entirely in the Playwright suite under `tests/e2e/`,
-driven through the real UI in `web/index.html` rather than by calling the
-domain classes directly — deliberately, since this is a browser/UI
-automation exercise. It's organised by feature into a handful of spec
-files:
+Test coverage lives entirely in `tests/e2e/specs/toy-robot.spec.ts`, driven
+through the real UI in `web/index.html` rather than by calling the domain
+classes directly — deliberately, since this is a browser/UI automation
+exercise. It's kept to five tests, each demonstrating a distinct part of the
+approach rather than exhaustively re-parametrizing every variant of every
+case:
 
-- `placement.spec.ts` — placing the robot by clicking a cell, and the
-  no-state readout before that happens
-- `movement.spec.ts` — `MOVE` in all four directions, `LEFT`/`RIGHT`
-  rotation (including the full four-turn return to the original facing),
-  and `REPORT`
-- `boundaries.spec.ts` — `MOVE` blocked at all four tabletop edges, and
-  commands issued before the first valid `PLACE` (or a malformed command)
-  ignored without corrupting state
-- `negative-input.spec.ts` — malformed and out-of-bounds `PLACE` syntax,
-  garbage/keyword-like commands, whitespace handling, and case-insensitive
-  parsing
-- `commands.spec.ts` — the raw typed-command input: reproducing the three
-  official examples, submitting via Enter, and empty/blank input
+1. UI placement — clicking a cell places the robot
+2. Correctness against the three official spec examples, via typed commands
+3. A boundary case — `MOVE` blocked at the table edge
+4. Rotation — `LEFT`/`RIGHT`
+5. Negative/invalid input — before-`PLACE` commands, a malformed command,
+   and an out-of-bounds `PLACE` all ignored without corrupting robot state
 
 Other Playwright config/reporting details: `playwright.config.ts` runs
 Chromium only, retains traces/screenshots/video on failure, and produces an

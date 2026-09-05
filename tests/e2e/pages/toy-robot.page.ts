@@ -18,7 +18,6 @@ export class ToyRobotPage extends BasePage {
   readonly moveButton: Locator;
   readonly leftButton: Locator;
   readonly rightButton: Locator;
-  readonly reportButton: Locator;
   readonly commandInput: Locator;
   readonly runButton: Locator;
   readonly stateReadout: Locator;
@@ -31,7 +30,6 @@ export class ToyRobotPage extends BasePage {
     this.moveButton = page.locator(TOY_ROBOT_LOCATORS.buttons.move);
     this.leftButton = page.locator(TOY_ROBOT_LOCATORS.buttons.left);
     this.rightButton = page.locator(TOY_ROBOT_LOCATORS.buttons.right);
-    this.reportButton = page.locator(TOY_ROBOT_LOCATORS.buttons.report);
     this.commandInput = page.locator(TOY_ROBOT_LOCATORS.commandInput.input);
     this.runButton = page.locator(TOY_ROBOT_LOCATORS.buttons.run);
     this.stateReadout = page.locator(TOY_ROBOT_LOCATORS.display.stateReadout);
@@ -73,10 +71,6 @@ export class ToyRobotPage extends BasePage {
     await this.rightButton.click();
   }
 
-  async report(): Promise<void> {
-    await this.reportButton.click();
-  }
-
   /**
    * Raw command input
    */
@@ -86,28 +80,14 @@ export class ToyRobotPage extends BasePage {
   }
 
   /**
-   * Submits the raw command input by pressing Enter instead of clicking
-   * Run, exercising the form's native submit event separately from a
-   * button click.
-   */
-  async runCommandWithEnter(command: string): Promise<void> {
-    await this.commandInput.fill(command);
-    await this.commandInput.press("Enter");
-  }
-
-  /**
    * Display and state
    */
   async currentState(): Promise<string> {
     return this.getText(this.stateReadout);
   }
 
-  async getLogLines(): Promise<string[]> {
-    return this.getAllText(this.logLines);
-  }
-
   async lastLogLine(): Promise<string> {
-    const lines = await this.getLogLines();
+    const lines = await this.getAllText(this.logLines);
     return lines.at(-1) ?? "";
   }
 
