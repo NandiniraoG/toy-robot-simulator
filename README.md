@@ -73,9 +73,6 @@ npm run typecheck  # strict TypeScript check, no emit
   original facing, plus every individual `LEFT`/`RIGHT` compass transition
 - a custom, smaller `Tabletop` size honoured end-to-end through the simulator
 
-A Playwright suite under `tests/e2e/` (`npm run test:e2e`) drives the demo in
-`web/index.html` through a real browser as a separate, optional check.
-
 ## Examples
 
 - `examples/example-a.txt` outputs `0,1,NORTH`
