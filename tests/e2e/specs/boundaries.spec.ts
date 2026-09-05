@@ -1,13 +1,14 @@
 /**
- * Boundary and Edge Case Tests
- * Tests for table edge behavior and invalid commands
+ * Boundary Tests
+ * MOVE is blocked at every edge of the tabletop, and commands issued before
+ * the first PLACE (or entirely malformed) are ignored rather than crashing
+ * the page.
  */
 
 import { expect, test } from "@playwright/test";
-import { ToyRobotPage } from "../pages/toy-robot.page";
-import { TEST_SCENARIOS } from "../fixtures/test-data";
+import { ToyRobotPage, type Facing } from "../pages/toy-robot.page";
 
-test.describe("Toy Robot - Boundary and Edge Case Tests", () => {
+test.describe("Toy Robot - Boundaries", () => {
   let robot: ToyRobotPage;
 
   test.beforeEach(async ({ page }) => {
@@ -15,46 +16,20 @@ test.describe("Toy Robot - Boundary and Edge Case Tests", () => {
     await robot.goto();
   });
 
-  test("MOVE at the table edge (North) is blocked and logged as ignored", async () => {
-    const testCase = TEST_SCENARIOS.boundaries[0];
-    await robot.placeAt(0, 4, "NORTH");
-    await robot.move();
+  for (const [x, y, facing] of [
+    [0, 0, "SOUTH"],
+    [0, 0, "WEST"],
+    [4, 4, "NORTH"],
+    [4, 4, "EAST"],
+  ] as [number, number, Facing][]) {
+    test(`MOVE off the tabletop is blocked for PLACE ${x},${y},${facing}`, async () => {
+      await robot.placeAt(x, y, facing);
+      await robot.move();
 
-    await expect.poll(() => robot.currentState()).toBe(testCase.expected);
-    expect(await robot.lastLogLine()).toBe("(ignored)");
-  });
-
-  test("MOVE at table edge (East) is blocked", async () => {
-    await robot.placeAt(4, 0, "EAST");
-    await robot.move();
-
-    await expect.poll(() => robot.currentState()).toBe("4,0,EAST");
-    expect(await robot.lastLogLine()).toBe("(ignored)");
-  });
-
-  test("MOVE at table edge (South) is blocked", async () => {
-    await robot.placeAt(0, 0, "SOUTH");
-    await robot.move();
-
-    await expect.poll(() => robot.currentState()).toBe("0,0,SOUTH");
-    expect(await robot.lastLogLine()).toBe("(ignored)");
-  });
-
-  test("MOVE at table edge (West) is blocked", async () => {
-    await robot.placeAt(0, 0, "WEST");
-    await robot.move();
-
-    await expect.poll(() => robot.currentState()).toBe("0,0,WEST");
-    expect(await robot.lastLogLine()).toBe("(ignored)");
-  });
-
-  test("a malformed typed command is ignored and leaves state unchanged", async () => {
-    await robot.placeAt(1, 1, "NORTH");
-    await robot.runCommand("JUMP");
-
-    await expect.poll(() => robot.currentState()).toBe("1,1,NORTH");
-    expect(await robot.lastLogLine()).toBe("(ignored)");
-  });
+      await expect.poll(() => robot.currentState()).toBe(`${x},${y},${facing}`);
+      expect(await robot.lastLogLine()).toBe("(ignored)");
+    });
+  }
 
   test("commands before the first PLACE are ignored", async () => {
     await robot.move();
@@ -63,7 +38,15 @@ test.describe("Toy Robot - Boundary and Edge Case Tests", () => {
     await expect.poll(() => robot.currentState()).toBe("(not placed yet)");
   });
 
-  test("multiple invalid commands are all logged", async () => {
+  test("a malformed typed command is ignored and leaves state unchanged", async () => {
+    await robot.placeAt(1, 1, "NORTH");
+    await robot.runCommand("JUMP");
+
+    expect(await robot.lastLogLine()).toBe("(ignored)");
+    await expect.poll(() => robot.currentState()).toBe("1,1,NORTH");
+  });
+
+  test("multiple invalid commands are all logged as ignored", async () => {
     await robot.runCommand("MOVE");
     await robot.runCommand("TURN");
     await robot.runCommand("INVALID");

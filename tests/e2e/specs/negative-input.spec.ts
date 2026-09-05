@@ -1,14 +1,14 @@
 /**
  * Negative and Invalid Input Tests
- * Browser-level mirror of the negative/invalid-input cases exercised
- * against the domain classes in tests/toy-robot.test.ts, verified here
- * through the actual web/index.html UI (clicks, buttons, typed commands).
+ * Malformed PLACE syntax, out-of-bounds PLACE, garbage/keyword-like
+ * commands, and whitespace handling - all verified through the actual
+ * web/index.html UI rather than the domain classes directly.
  */
 
 import { expect, test } from "@playwright/test";
 import { ToyRobotPage } from "../pages/toy-robot.page";
 
-test.describe("Toy Robot - Negative and Invalid Input Tests", () => {
+test.describe("Toy Robot - Negative and Invalid Input", () => {
   let robot: ToyRobotPage;
 
   test.beforeEach(async ({ page }) => {

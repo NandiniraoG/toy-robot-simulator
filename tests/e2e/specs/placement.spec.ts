@@ -1,13 +1,13 @@
 /**
  * Placement Tests
- * Tests for robot placement functionality
+ * Placing the robot on the board via the UI, and the state readout before
+ * any placement has happened.
  */
 
 import { expect, test } from "@playwright/test";
 import { ToyRobotPage } from "../pages/toy-robot.page";
-import { TEST_SCENARIOS } from "../fixtures/test-data";
 
-test.describe("Toy Robot - Placement Tests", () => {
+test.describe("Toy Robot - Placement", () => {
   let robot: ToyRobotPage;
 
   test.beforeEach(async ({ page }) => {
@@ -16,14 +16,23 @@ test.describe("Toy Robot - Placement Tests", () => {
   });
 
   test("shows no state until the robot is placed", async () => {
-    const testCase = TEST_SCENARIOS.placement[0];
-    await expect.poll(() => robot.currentState()).toBe(testCase.expected);
+    expect(await robot.isRobotMarkerVisible()).toBe(false);
+    await expect.poll(() => robot.currentState()).toBe("(not placed yet)");
   });
 
   test("places the robot by clicking a cell", async () => {
-    const testCase = TEST_SCENARIOS.placement[1];
     await robot.placeAt(0, 0, "NORTH");
-    await expect.poll(() => robot.currentState()).toBe(testCase.expected);
+
+    expect(await robot.isRobotMarkerVisible()).toBe(true);
+    await expect.poll(() => robot.currentState()).toBe("0,0,NORTH");
+  });
+
+  test("re-placing at a new cell replaces the robot rather than adding another", async () => {
+    await robot.placeAt(0, 0, "NORTH");
+    await robot.placeAt(4, 4, "WEST");
+
+    await expect(robot.robotMarker).toHaveCount(1);
+    await expect.poll(() => robot.currentState()).toBe("4,4,WEST");
   });
 
   test("re-placing at the same coordinate and facing is not logged as ignored", async () => {
@@ -32,13 +41,5 @@ test.describe("Toy Robot - Placement Tests", () => {
 
     await expect.poll(() => robot.currentState()).toBe("2,2,EAST");
     expect(await robot.lastLogLine()).not.toBe("(ignored)");
-  });
-
-  test("switches case context during placement", async () => {
-    robot.switchCase("placement");
-    expect(robot.getCurrentCase()).toBe("placement");
-
-    await robot.placeAt(1, 1, "NORTH");
-    await expect.poll(() => robot.currentState()).toBe("1,1,NORTH");
   });
 });

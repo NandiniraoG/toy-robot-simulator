@@ -1,26 +1,18 @@
 /**
- * Command Input Tests
- * Tests for raw command input and processing
+ * Typed Command Input Tests
+ * The raw command text box: reproducing the official spec examples,
+ * submitting via Enter, and how empty/blank input is handled.
  */
 
 import { expect, test } from "@playwright/test";
 import { ToyRobotPage } from "../pages/toy-robot.page";
-import { TEST_SCENARIOS } from "../fixtures/test-data";
 
-test.describe("Toy Robot - Command Input Tests", () => {
+test.describe("Toy Robot - Typed Commands", () => {
   let robot: ToyRobotPage;
 
   test.beforeEach(async ({ page }) => {
     robot = new ToyRobotPage(page);
     await robot.goto();
-  });
-
-  test("switches to commandInput case during raw command execution", async () => {
-    robot.switchCase("commandInput");
-    expect(robot.getCurrentCase()).toBe("commandInput");
-
-    await robot.runCommand("PLACE 1,1,NORTH");
-    await expect.poll(() => robot.currentState()).toBe("1,1,NORTH");
   });
 
   test("reproduces spec example A via typed commands", async () => {
@@ -44,26 +36,10 @@ test.describe("Toy Robot - Command Input Tests", () => {
     await robot.runCommand("MOVE");
     await robot.runCommand("MOVE");
     await robot.runCommand("LEFT");
+    await robot.runCommand("MOVE");
     await robot.runCommand("REPORT");
 
-    expect(await robot.lastLogLine()).toBe("3,2,NORTH");
-  });
-
-  test("executes complex command sequence", async () => {
-    const commands = [
-      "PLACE 0,0,NORTH",
-      "MOVE",
-      "TURN_RIGHT",
-      "MOVE",
-    ];
-
-    for (const cmd of commands) {
-      await robot.runCommand(cmd);
-    }
-
-    // Verify final state
-    const finalState = await robot.currentState();
-    expect(finalState).toMatch(/^\d,\d,(NORTH|EAST|SOUTH|WEST)$/);
+    expect(await robot.lastLogLine()).toBe("3,3,NORTH");
   });
 
   test("handles empty command input gracefully", async () => {
@@ -72,14 +48,19 @@ test.describe("Toy Robot - Command Input Tests", () => {
 
     await robot.runCommand("");
 
-    const stateAfter = await robot.currentState();
-    expect(stateAfter).toBe(stateBefore);
+    expect(await robot.currentState()).toBe(stateBefore);
   });
 
   test("clears input field after command submission", async () => {
     await robot.runCommand("PLACE 1,1,NORTH");
 
-    const inputValue = await robot.commandInput.inputValue();
-    expect(inputValue).toBe("");
+    expect(await robot.commandInput.inputValue()).toBe("");
+  });
+
+  test("pressing Enter in the command field submits it, same as clicking Run", async () => {
+    await robot.runCommandWithEnter("PLACE 4,4,EAST");
+
+    await expect.poll(() => robot.currentState()).toBe("4,4,EAST");
+    expect(await robot.commandInput.inputValue()).toBe("");
   });
 });

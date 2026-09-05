@@ -57,24 +57,33 @@ cat examples/example-a.txt | npm start
 ## Test
 
 ```bash
-npm test        # unit tests (vitest)
 npm run typecheck  # strict TypeScript check, no emit
+npm run test:e2e   # Playwright suite, driven through web/index.html
 ```
 
-`npm test` runs 23 unit tests against the domain classes described above:
+Test coverage lives entirely in the Playwright suite under `tests/e2e/`,
+driven through the real UI in `web/index.html` rather than by calling the
+domain classes directly — deliberately, since this is a browser/UI
+automation exercise. It's organised by feature into a handful of spec
+files:
 
-- the three official examples (`PLACE`/`MOVE`/`LEFT`/`RIGHT`/`REPORT`)
-- commands issued before the first valid `PLACE` (ignored)
-- an invalid `PLACE` followed by a later valid one repositioning the robot
-- malformed and case-insensitive command parsing
-- `MOVE` blocked at all four tabletop edges — `0,0` facing `SOUTH`/`WEST` and
-  `4,4` facing `NORTH`/`EAST` — via a parameterised test per edge
-- rotation: four consecutive `LEFT` (or `RIGHT`) commands returning to the
-  original facing, plus every individual `LEFT`/`RIGHT` compass transition
-- a custom, smaller `Tabletop` size honoured end-to-end through the simulator
+- `placement.spec.ts` — placing the robot by clicking a cell, and the
+  no-state readout before that happens
+- `movement.spec.ts` — `MOVE` in all four directions, `LEFT`/`RIGHT`
+  rotation (including the full four-turn return to the original facing),
+  and `REPORT`
+- `boundaries.spec.ts` — `MOVE` blocked at all four tabletop edges, and
+  commands issued before the first valid `PLACE` (or a malformed command)
+  ignored without corrupting state
+- `negative-input.spec.ts` — malformed and out-of-bounds `PLACE` syntax,
+  garbage/keyword-like commands, whitespace handling, and case-insensitive
+  parsing
+- `commands.spec.ts` — the raw typed-command input: reproducing the three
+  official examples, submitting via Enter, and empty/blank input
 
-A Playwright suite under `tests/e2e/` (`npm run test:e2e`) drives the demo in
-`web/index.html` through a real browser as a separate, optional check.
+Other Playwright config/reporting details: `playwright.config.ts` runs
+Chromium only, retains traces/screenshots/video on failure, and produces an
+HTML report (`npm run test:e2e:report`).
 
 ## Examples
 
