@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import { test } from "@playwright/test";
 import { ToyRobotPage } from "../tests/e2e/pages/toy-robot.page.ts";
-import { OFFICIAL_EXAMPLES } from "../tests/e2e/data/toy-robot.testdata.ts";
+import { OFFICIAL_EXAMPLES } from "../tests/e2e/testData/toy-robot.testdata.ts";
 
 const OUT_DIR = "docs/screenshots";
 const FILES = ["example-a.png", "example-b.png", "example-c.png"];

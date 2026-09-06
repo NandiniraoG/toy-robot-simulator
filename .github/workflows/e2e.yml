@@ -1,4 +1,4 @@
-name: E2E Tests
+name: Tests
 
 on:
   push:
@@ -20,11 +20,15 @@ jobs:
 
       - run: npm run typecheck
 
-      # web/index.html loads dist/web/app.js, so the app has to be built before
+      # src/web/index.html loads dist/web/app.js, so the app has to be built before
       # anything opens the page. The Playwright configs also build via
       # globalSetup; doing it here as well fails fast with a clear step name if
       # the bundle itself is broken.
       - run: npm run build
+
+      # Domain + CLI tests need no browser, so run them before the Chromium
+      # download: a broken rule fails the job in seconds instead of minutes.
+      - run: npm run test:unit
 
       - run: npx playwright install --with-deps chromium
 

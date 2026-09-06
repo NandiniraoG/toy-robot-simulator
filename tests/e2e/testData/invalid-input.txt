@@ -1,0 +1,23 @@
+# Malformed input must be ignored without corrupting state.
+# Expected output, in order:
+#   1,1,NORTH
+#   1,1,NORTH
+#   2,2,EAST
+
+PLACE 1,1,NORTH
+REPORT
+
+JUMP
+FLY 1,2,NORTH
+PLACE
+PLACE 1
+PLACE 1,2
+PLACE 9,9,NORTH
+PLACE -1,0,NORTH
+PLACE 2,2,UP
+PLACE 1.5,2,NORTH
+REPORT
+
+# Lower case and padded input is accepted.
+   place 2,2,east
+report

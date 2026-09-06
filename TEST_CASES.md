@@ -1,6 +1,6 @@
 # Manual Test Cases — Toy Robot Simulator
 
-Test cases for `web/index.html`, written independently of the automated
+Test cases for `src/web/index.html`, written independently of the automated
 suite as a QA test-design exercise. Each one maps 1:1 to a scenario covered
 by `tests/e2e/specs/toy-robot.spec.ts` (see the "Automated" column).
 

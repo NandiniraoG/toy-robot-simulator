@@ -23,8 +23,13 @@ export class Simulator {
     this.#robot = robot;
   }
 
+  /**
+   * Case and surrounding whitespace are normalised here rather than by each
+   * caller, so every front end — the web UI and the CLI — accepts the same
+   * input. A command that is not one of the five valid forms is ignored.
+   */
   execute(line: string): CommandResult {
-    const command = line.trim();
+    const command = line.trim().toUpperCase();
     switch (command) {
       case "MOVE":
         return { success: this.#robot.move() };
@@ -42,9 +47,5 @@ export class Simulator {
     const [, x, y, facing] = match;
     if (facing === undefined || !isDirection(facing)) return { success: false };
     return { success: this.#robot.place(Number(x), Number(y), facing) };
-  }
-
-  get robot(): Robot {
-    return this.#robot;
   }
 }

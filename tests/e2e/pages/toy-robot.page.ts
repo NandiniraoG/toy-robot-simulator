@@ -4,7 +4,7 @@ import type { Locator, Page } from "@playwright/test";
 
 export type Facing = "NORTH" | "EAST" | "SOUTH" | "WEST";
 
-const PAGE_PATH = path.resolve(import.meta.dirname, "../../../web/index.html");
+const PAGE_PATH = path.resolve(import.meta.dirname, "../../../src/web/index.html");
 
 const SELECTORS = {
   placement: {

@@ -2,7 +2,7 @@ import { Robot, SIZE, Simulator } from "../domain/index.ts";
 import { ROBOT_SVG, ROTATION } from "./robot-glyph.ts";
 
 /**
- * DOM wiring for web/index.html: builds the 5x5 grid, draws the robot marker,
+ * DOM wiring for src/web/index.html: builds the 5x5 grid, draws the robot marker,
  * and hooks up the buttons/command box/log. All rules about what a command
  * means live in ../domain — this file only translates clicks and keystrokes
  * into command lines, and robot state back into pixels.
@@ -106,6 +106,8 @@ function wireControls(): void {
 
   cmdForm.addEventListener("submit", (e) => {
     e.preventDefault();
+    // The Simulator normalises case itself; uppercasing here too is what
+    // makes the command log echo `> MOVE` rather than whatever was typed.
     const value = cmdInput.value.toUpperCase();
     if (!value.trim()) return;
     runLine(value);

@@ -1,8 +1,9 @@
 {
-  // Application code in src/: the domain rules plus the DOM wiring that
-  // web/index.html loads. Browser-targeted, so it gets the DOM lib and no
-  // Node types — the Node-flavoured test/tooling code is checked separately
-  // by the root tsconfig.json.
+  // Browser-side application code: the domain rules plus the DOM wiring that
+  // web/index.html loads. Gets the DOM lib and no Node types, so a stray
+  // `process` or `node:fs` import in here is a compile error. The CLI front
+  // end (src/cli) and the test/tooling code are Node-flavoured and are
+  // checked by the root tsconfig.json instead.
   "compilerOptions": {
     "target": "es2022",
     "lib": ["es2022", "dom", "dom.iterable"],
@@ -18,5 +19,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src/domain", "src/web"]
 }

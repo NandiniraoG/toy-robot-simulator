@@ -4,7 +4,7 @@ import path from "node:path";
 const ROOT = path.resolve(import.meta.dirname, "..");
 
 /**
- * The suite drives web/index.html straight off disk, and that page loads the
+ * The suite drives src/web/index.html straight off disk, and that page loads the
  * compiled bundle at dist/web/app.js. Building here rather than leaving it to
  * the caller means every entry point — `npm run test:e2e`, `--ui`, `--headed`,
  * `--debug`, `npm run screenshots`, or a bare `npx playwright test` — always
