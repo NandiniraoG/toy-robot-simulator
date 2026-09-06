@@ -89,7 +89,13 @@ export class ToyRobotPage {
     return lines.at(-1) ?? "";
   }
 
-  async isRobotMarkerVisible(): Promise<boolean> {
-    return (await this.robotMarker.count()) > 0;
+  /**
+   * Count of robot markers on the board — 0 before the first PLACE, 1 after.
+   * Prefer asserting on the `robotMarker` locator itself
+   * (`expect(page.robotMarker).toBeVisible()`) when what you mean is
+   * visibility: that retries, and existence is not the same as being shown.
+   */
+  async robotMarkerCount(): Promise<number> {
+    return this.robotMarker.count();
   }
 }
