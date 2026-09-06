@@ -6,5 +6,8 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./scripts",
   testMatch: "capture-screenshots.spec.ts",
+  // Same build step as the test config, so screenshots always show the
+  // current src/.
+  globalSetup: "./tests/global-setup.ts",
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

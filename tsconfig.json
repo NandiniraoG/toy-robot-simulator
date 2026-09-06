@@ -1,4 +1,7 @@
 {
+  // Node-side code: the Playwright suite, its page objects, and the build /
+  // screenshot tooling. Browser code in src/ is checked by tsconfig.app.json;
+  // `npm run typecheck` runs both.
   "compilerOptions": {
     "target": "es2022",
     "lib": ["es2022"],

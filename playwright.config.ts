@@ -2,6 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // Compiles src/ to dist/web/app.js before anything opens the page.
+  globalSetup: "./tests/global-setup.ts",
   fullyParallel: true,
   reporter: [
     ["list"],
