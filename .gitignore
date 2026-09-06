@@ -5,3 +5,27 @@ dist/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/playwright/.auth/
+
+# Environment variables (local only)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+coverage/
