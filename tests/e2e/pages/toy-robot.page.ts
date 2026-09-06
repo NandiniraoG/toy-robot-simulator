@@ -1,54 +1,55 @@
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 import type { Locator, Page } from "@playwright/test";
-import { BasePage } from "./base.page";
-import { TOY_ROBOT_LOCATORS } from "./locators";
 
 export type Facing = "NORTH" | "EAST" | "SOUTH" | "WEST";
 
 const PAGE_PATH = path.resolve(import.meta.dirname, "../../../web/index.html");
 
-/**
- * Page Object Model for the static toy-robot web demo (web/index.html).
- * Encapsulates its DOM structure so specs read in terms of robot commands,
- * not selectors.
- */
-export class ToyRobotPage extends BasePage {
-  readonly facingSelect: Locator;
-  readonly moveButton: Locator;
-  readonly leftButton: Locator;
-  readonly rightButton: Locator;
-  readonly commandInput: Locator;
-  readonly runButton: Locator;
-  readonly stateReadout: Locator;
-  readonly logLines: Locator;
-  readonly robotMarker: Locator;
+const SELECTORS = {
+  placement: {
+    cell: (x: number, y: number) => `.cell[data-x="${x}"][data-y="${y}"]`,
+    facingSelect: "#facingSelect",
+  },
+  buttons: {
+    move: "#btnMove",
+    left: "#btnLeft",
+    right: "#btnRight",
+    run: '#cmdForm button[type="submit"]',
+  },
+  commandInput: "#cmdInput",
+  display: {
+    stateReadout: "#report",
+    logLines: "#log div",
+    robotMarker: "#robotLayer .robot",
+  },
+};
 
-  constructor(page: Page) {
-    super(page);
-    this.facingSelect = page.locator(TOY_ROBOT_LOCATORS.placement.facingSelect);
-    this.moveButton = page.locator(TOY_ROBOT_LOCATORS.buttons.move);
-    this.leftButton = page.locator(TOY_ROBOT_LOCATORS.buttons.left);
-    this.rightButton = page.locator(TOY_ROBOT_LOCATORS.buttons.right);
-    this.commandInput = page.locator(TOY_ROBOT_LOCATORS.commandInput.input);
-    this.runButton = page.locator(TOY_ROBOT_LOCATORS.buttons.run);
-    this.stateReadout = page.locator(TOY_ROBOT_LOCATORS.display.stateReadout);
-    this.logLines = page.locator(TOY_ROBOT_LOCATORS.display.logLines);
-    this.robotMarker = page.locator(TOY_ROBOT_LOCATORS.display.robotMarker);
-  }
+export class ToyRobotPage {
+  constructor(readonly page: Page) {}
+
+  get facingSelect(): Locator { return this.page.locator(SELECTORS.placement.facingSelect); }
+  get moveButton(): Locator { return this.page.locator(SELECTORS.buttons.move); }
+  get leftButton(): Locator { return this.page.locator(SELECTORS.buttons.left); }
+  get rightButton(): Locator { return this.page.locator(SELECTORS.buttons.right); }
+  get commandInput(): Locator { return this.page.locator(SELECTORS.commandInput); }
+  get runButton(): Locator { return this.page.locator(SELECTORS.buttons.run); }
+  get stateReadout(): Locator { return this.page.locator(SELECTORS.display.stateReadout); }
+  get logLines(): Locator { return this.page.locator(SELECTORS.display.logLines); }
+  get robotMarker(): Locator { return this.page.locator(SELECTORS.display.robotMarker); }
 
   /**
    * Navigate to the Toy Robot page
    */
   async goto(): Promise<void> {
-    await super.goto(pathToFileURL(PAGE_PATH).href);
+    await this.page.goto(pathToFileURL(PAGE_PATH).href);
   }
 
   /**
    * Placement
    */
   async clickCell(x: number, y: number): Promise<void> {
-    await this.page.locator(TOY_ROBOT_LOCATORS.placement.cell(x, y)).click();
+    await this.page.locator(SELECTORS.placement.cell(x, y)).click();
   }
 
   async placeAt(x: number, y: number, facing: Facing): Promise<void> {
@@ -56,9 +57,6 @@ export class ToyRobotPage extends BasePage {
     await this.clickCell(x, y);
   }
 
-  /**
-   * Command buttons
-   */
   async move(): Promise<void> {
     await this.moveButton.click();
   }
@@ -71,30 +69,26 @@ export class ToyRobotPage extends BasePage {
     await this.rightButton.click();
   }
 
-  /**
-   * Raw command input
-   */
   async runCommand(command: string): Promise<void> {
     await this.commandInput.fill(command);
     await this.runButton.click();
   }
 
-  /**
-   * Display and state
-   */
+  async runCommands(commands: string[]): Promise<void> {
+    for (const command of commands) {
+      await this.runCommand(command);
+    }
+  }
+
   async currentState(): Promise<string> {
-    return this.getText(this.stateReadout);
+    return ((await this.stateReadout.textContent()) ?? "").trim();
   }
 
   async lastLogLine(): Promise<string> {
-    const lines = await this.getAllText(this.logLines);
+    const lines = await this.logLines.allTextContents();
     return lines.at(-1) ?? "";
   }
 
-  /**
-   * The marker (`.robot`) only exists in the DOM once the robot has been
-   * placed at least once; it is never removed once created, only repositioned.
-   */
   async isRobotMarkerVisible(): Promise<boolean> {
     return (await this.robotMarker.count()) > 0;
   }
