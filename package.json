@@ -5,7 +5,9 @@
   "type": "module",
   "description": "Toy Robot Simulator - a robot moves on a 5x5 tabletop via PLACE/MOVE/LEFT/RIGHT/REPORT commands without falling off.",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.app.json",
+    "build": "esbuild src/web/main.ts --bundle --format=iife --target=es2022 --sourcemap --outfile=dist/web/app.js",
+    "build:watch": "npm run build -- --watch",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
@@ -14,8 +16,9 @@
     "screenshots": "playwright test --config=playwright.screenshots.config.ts"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
+    "@playwright/test": "^1.40.0",
     "@types/node": "^22.0.0",
-    "@playwright/test": "^1.40.0"
+    "esbuild": "0.28.2",
+    "typescript": "^5.6.0"
   }
 }

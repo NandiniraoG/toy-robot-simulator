@@ -22,8 +22,20 @@ silently ignored, so a well-formed run is never derailed by garbage input.
 
 ## Design
 
-Everything lives in a single file, `web/index.html` — no build step, no
-bundler, just a static page with an embedded `<script>`:
+The behaviour is TypeScript under `src/`, compiled to a single browser
+bundle. `web/index.html` is markup, styles, and one `<script src>` — it
+holds no logic of its own, so the rules exist in exactly one place.
+
+```
+src/domain/direction.ts   the four facings + the turn/step lookup tables
+src/domain/table.ts       the grid boundary
+src/domain/robot.ts       the robot state machine
+src/domain/simulator.ts   command-line parsing and dispatch
+src/domain/index.ts       barrel re-export, the domain's public surface
+src/web/robot-glyph.ts    the robot SVG and its per-facing rotation
+src/web/main.ts           DOM wiring; the bundle entry point
+web/index.html            markup + styles; loads dist/web/app.js
+```
 
 - `Table` — owns the grid boundary and answers whether a coordinate is on
   it. Nothing else needs to know how big the table is.
@@ -34,23 +46,52 @@ bundler, just a static page with an embedded `<script>`:
 - `Simulator` — parses a raw command line and drives the robot, returning
   both whether the command took effect and any `REPORT` output.
 
-The rest of the file is DOM wiring: building the 5x5 grid, drawing the
-robot marker, and hooking up the buttons/command box/log.
+`src/web/main.ts` is only wiring: it builds the 5x5 grid, draws the robot
+marker, hooks up the buttons/command box/log, and translates every
+interaction into a command line the `Simulator` interprets.
+
+### Why a bundle, and not ES modules
+
+The Playwright suite opens the page over `file://`, and Chromium blocks
+`<script type="module">` there (the file origin is `null`, so the module
+fetch fails CORS). So `npm run build` bundles `src/web/main.ts` with esbuild
+into `dist/web/app.js` as a classic script, which `file://` loads fine. That
+keeps "just open the HTML" working with no server, while the source stays
+split into real modules.
+
+`dist/` is generated and git-ignored.
 
 ## Run
 
-Open `web/index.html` directly in a browser — no install, no server. Click
+```bash
+npm install
+npm run build   # bundles src/ -> dist/web/app.js
+```
+
+Then open `web/index.html` directly in a browser — no server needed. Click
 a cell to place the robot (choose a facing first), use the MOVE/LEFT/RIGHT/
 REPORT buttons, or type a raw command like `PLACE 1,2,EAST` into the command
 box.
 
+While editing, `npm run build:watch` rebuilds on save; reload the page to
+pick the change up.
+
 ## Test
 
 ```bash
-npm install
-npm run typecheck  # strict TypeScript check of the Playwright test code
+npm ci             # or: npm install
+npm run typecheck  # strict TypeScript check of src/ and of the test code
 npm run test:e2e   # Playwright suite, driven through web/index.html
 ```
+
+`npm run test:e2e` needs no separate build step — both Playwright configs
+run `npm run build` from `tests/global-setup.ts` before the first page
+opens, so `--ui`, `--headed`, `--debug` and `npm run screenshots` all test
+the current `src/` too.
+
+`npm run typecheck` runs `tsc` twice: `tsconfig.json` covers the
+Node-flavoured test and tooling code, and `tsconfig.app.json` covers the
+browser code in `src/` (DOM lib, no Node types).
 
 Test coverage lives entirely in `tests/e2e/specs/toy-robot.spec.ts`, driven
 through the real UI in `web/index.html` via a Page Object Model
