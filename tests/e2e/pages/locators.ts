@@ -1,7 +1,4 @@
-/**
- * Centralized locators for Toy Robot page
- * Organized by functional sections/cases
- */
+
 
 export const TOY_ROBOT_LOCATORS = {
   // Grid and Placement

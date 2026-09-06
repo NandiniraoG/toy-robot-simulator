@@ -1,18 +1,13 @@
-/**
- * Toy Robot - End-to-End Tests
- *
- * Five tests, driven through the real web/index.html UI, chosen to each
- * demonstrate a distinct part of the testing approach rather than
- * exhaustively re-parametrizing every variant of every case:
- *   1. UI placement (click-to-place)
- *   2. Correctness against the three official spec examples
- *   3. A boundary/edge case
- *   4. Rotation
- *   5. Negative/invalid input handling
- */
-
 import { expect, test } from "@playwright/test";
-import { ToyRobotPage } from "../pages/toy-robot.page";
+import { ToyRobotPage } from "../pages/toy-robot.page.ts";
+import {
+  CASE_INSENSITIVITY_START,
+  CLICK_PLACEMENT,
+  INVALID_INPUT,
+  OFFICIAL_EXAMPLES,
+  ROTATION_START,
+  TABLE_EDGES,
+} from "../data/toy-robot.testdata.ts";
 
 test.describe("Toy Robot", () => {
   let robot: ToyRobotPage;
@@ -22,45 +17,34 @@ test.describe("Toy Robot", () => {
     await robot.goto();
   });
 
-  test("places the robot by clicking a cell", async () => {
+  test("0.places the robot by clicking a cell", async () => {
     expect(await robot.isRobotMarkerVisible()).toBe(false);
 
-    await robot.placeAt(2, 2, "NORTH");
+    const { x, y, facing } = CLICK_PLACEMENT;
+    await robot.placeAt(x, y, facing);
 
     expect(await robot.isRobotMarkerVisible()).toBe(true);
-    await expect.poll(() => robot.currentState()).toBe("2,2,NORTH");
+    await expect.poll(() => robot.currentState()).toBe(`${x},${y},${facing}`);
   });
 
-  test("reproduces the three official spec examples via typed commands", async () => {
-    await robot.runCommand("PLACE 0,0,NORTH");
-    await robot.runCommand("MOVE");
-    await robot.runCommand("REPORT");
-    expect(await robot.lastLogLine()).toBe("0,1,NORTH"); // example A
-
-    await robot.runCommand("PLACE 0,0,NORTH");
-    await robot.runCommand("LEFT");
-    await robot.runCommand("REPORT");
-    expect(await robot.lastLogLine()).toBe("0,0,WEST"); // example B
-
-    await robot.runCommand("PLACE 1,2,EAST");
-    await robot.runCommand("MOVE");
-    await robot.runCommand("MOVE");
-    await robot.runCommand("LEFT");
-    await robot.runCommand("MOVE");
-    await robot.runCommand("REPORT");
-    expect(await robot.lastLogLine()).toBe("3,3,NORTH"); // example C
+  test("1.Reproduces the three official spec examples via typed commands", async () => {
+    for (const { commands, expected } of OFFICIAL_EXAMPLES) {
+      await robot.runCommands(commands);
+      expect(await robot.lastLogLine()).toBe(expected);
+    }
   });
 
-  test("MOVE off the edge of the table is blocked", async () => {
-    await robot.placeAt(4, 4, "NORTH");
-    await robot.move();
-
-    await expect.poll(() => robot.currentState()).toBe("4,4,NORTH");
-    expect(await robot.lastLogLine()).toBe("(ignored)");
+  test("2.MOVE is blocked at every edge of the table", async () => {
+    for (const { x, y, facing } of TABLE_EDGES) {
+      await robot.placeAt(x, y, facing);
+      await robot.move();
+      await expect.poll(() => robot.currentState()).toBe(`${x},${y},${facing}`);
+      expect(await robot.lastLogLine()).toBe("(ignored)");
+    }
   });
 
-  test("LEFT and RIGHT rotate the robot without changing its position", async () => {
-    await robot.placeAt(2, 2, "NORTH");
+  test("3.LEFT and RIGHT rotate the robot without changing its position", async () => {
+    await robot.placeAt(ROTATION_START.x, ROTATION_START.y, ROTATION_START.facing);
 
     await robot.turnLeft();
     await expect.poll(() => robot.currentState()).toBe("2,2,WEST");
@@ -70,17 +54,40 @@ test.describe("Toy Robot", () => {
     await expect.poll(() => robot.currentState()).toBe("2,2,EAST");
   });
 
-  test("invalid input is ignored without corrupting robot state", async () => {
-    await robot.move(); // before any PLACE
+  test("4.invalid input is ignored without corrupting robot state", async () => {
+    await robot.move(); // MOVE before any PLACE
     expect(await robot.lastLogLine()).toBe("(ignored)");
     await expect.poll(() => robot.currentState()).toBe("(not placed yet)");
 
-    await robot.placeAt(1, 1, "NORTH");
-    await robot.runCommand("JUMP"); // malformed command
+    await robot.runCommand("REPORT"); // REPORT before any PLACE
+    expect(await robot.lastLogLine()).toBe("(ignored)");
+    await expect.poll(() => robot.currentState()).toBe("(not placed yet)");
+
+    const { validPlacement, malformedCommand, outOfBoundsPlace, invalidFacingPlace } =
+      INVALID_INPUT;
+    const placedState = `${validPlacement.x},${validPlacement.y},${validPlacement.facing}`;
+
+    await robot.placeAt(validPlacement.x, validPlacement.y, validPlacement.facing);
+    await robot.runCommand(malformedCommand); // malformed command
     expect(await robot.lastLogLine()).toBe("(ignored)");
 
-    await robot.runCommand("PLACE 9,9,NORTH"); // out-of-bounds PLACE
+    await robot.runCommand(outOfBoundsPlace);
     expect(await robot.lastLogLine()).toBe("(ignored)");
-    await expect.poll(() => robot.currentState()).toBe("1,1,NORTH");
+    await expect.poll(() => robot.currentState()).toBe(placedState);
+
+    await robot.runCommand(invalidFacingPlace);
+    expect(await robot.lastLogLine()).toBe("(ignored)");
+    await expect.poll(() => robot.currentState()).toBe(placedState);
+  });
+
+  test("5.typed commands are case-insensitive", async () => {
+    const { x, y, facing } = CASE_INSENSITIVITY_START;
+    await robot.placeAt(x, y, facing);
+
+    await robot.runCommand("move");
+    await expect.poll(() => robot.currentState()).toBe(`${x},${y + 1},${facing}`);
+
+    await robot.runCommand("report");
+    expect(await robot.lastLogLine()).toBe(`${x},${y + 1},${facing}`);
   });
 });
