@@ -56,7 +56,16 @@ export class Robot {
     return `${x},${y},${facing}`;
   }
 
+  /**
+   * A frozen snapshot, not the live object. Handing out `#position` directly
+   * would let any caller do `robot.position.x = 99` and corrupt the robot from
+   * outside — `readonly` on Position is compile-time only and disappears in
+   * the emitted JavaScript. Copying keeps the robot the sole writer of its own
+   * state; freezing makes an attempted write fail loudly under strict mode
+   * instead of being silently discarded.
+   */
   get position(): Position | undefined {
-    return this.#position;
+    if (!this.#position) return undefined;
+    return Object.freeze({ ...this.#position });
   }
 }

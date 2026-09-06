@@ -1,0 +1,50 @@
+# Boundary, discard and rotation rules in one run.
+# Expected output, in order:
+#   2,4,NORTH
+#   2,4,NORTH
+#   3,4,EAST
+#   3,4,EAST
+#   0,0,WEST
+#   0,0,SOUTH
+#   0,1,NORTH
+
+# Every command before a valid PLACE is discarded, REPORT included.
+MOVE
+LEFT
+RIGHT
+REPORT
+
+# An initial placement off the table is refused, so the robot is still absent.
+PLACE 5,5,NORTH
+REPORT
+
+# A valid PLACE activates the robot.
+PLACE 2,4,NORTH
+REPORT
+
+# At the north edge MOVE is ignored - and further valid movement still works.
+MOVE
+REPORT
+RIGHT
+MOVE
+REPORT
+
+# Rotating a full circle restores the original facing, position untouched.
+LEFT
+LEFT
+LEFT
+LEFT
+REPORT
+
+# Re-placing mid-run is allowed; blocked moves at the south-west corner
+# leave the robot free to turn and move inward afterwards.
+PLACE 0,0,WEST
+MOVE
+REPORT
+LEFT
+MOVE
+REPORT
+RIGHT
+RIGHT
+MOVE
+REPORT

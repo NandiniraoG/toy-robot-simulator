@@ -7,7 +7,7 @@ import {
   OFFICIAL_EXAMPLES,
   ROTATION_START,
   TABLE_EDGES,
-} from "../data/toy-robot.testdata.ts";
+} from "../testData/toy-robot.testdata.ts";
 
 test.describe("Toy Robot", () => {
   let robot: ToyRobotPage;

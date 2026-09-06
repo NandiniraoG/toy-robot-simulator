@@ -310,12 +310,12 @@
 </main>
 
 <!--
-  Behaviour lives in TypeScript under src/ (domain rules in src/domain/, DOM
-  wiring in src/web/main.ts) and is bundled to dist/web/app.js by `npm run
-  build`. It is loaded as a classic script, not a module, so the page still
+  Behaviour lives in TypeScript alongside this file (domain rules in
+  src/domain/, DOM wiring in src/web/main.ts) and is bundled to
+  dist/web/app.js by `npm run build`. It is loaded as a classic script, not a module, so the page still
   works when opened straight off disk over file:// — which is how the
   Playwright suite drives it.
 -->
-<script src="../dist/web/app.js"></script>
+<script src="../../dist/web/app.js"></script>
 </body>
 </html>
