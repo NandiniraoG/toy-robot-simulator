@@ -92,8 +92,10 @@ split into real modules.
 
 ## Run
 
+Requires **Node.js 22** (the version CI runs).
+
 ```bash
-npm install
+npm ci
 npm run build     # -> dist/cli/main.js and dist/web/app.js
 ```
 
@@ -124,16 +126,23 @@ While editing, `npm run build:watch` rebuilds the page bundle on save.
 
 ## Test
 
+Requires **Node.js 22** (the version CI runs; anything from 20.11 up should
+work). From a clean checkout:
+
 ```bash
-npm ci             # or: npm install
-npm run typecheck  # strict TypeScript check of every source and test file
-npm test           # unit + CLI suite, then the browser suite
+npm ci
+npx playwright install chromium   # browser for the e2e suite
+npm run typecheck                 # strict check of every source and test file
+npm test                          # unit + CLI suite, then the browser suite
 ```
 
-or each suite on its own:
+The Chromium download is only needed for the browser suite —
+`npm run test:unit` runs the domain and CLI tests with no browser at all.
+
+Run each suite on its own with:
 
 ```bash
-npm run test:unit  # 49 Node tests: the domain classes and the CLI
+npm run test:unit  # 50 Node tests: the domain classes and the CLI
 npm run test:e2e   # 6 Playwright tests through src/web/index.html
 ```
 

@@ -15,11 +15,27 @@ const dataFile = (name: string) => path.resolve(import.meta.dirname, "../e2e/tes
 
 type Run = { stdout: string; stderr: string; status: number | null };
 
-function runCli(args: string[] = [], stdin = ""): Run {
+/**
+ * The tests below assert the CLI writes nothing to stderr on success, so the
+ * child must not inherit anything that makes Node itself chatter there.
+ * Setting NO_COLOR and FORCE_COLOR together makes Node emit "The 'NO_COLOR'
+ * env is ignored due to the 'FORCE_COLOR' env being set" on startup, and some
+ * CI images set both. Strip them rather than loosening the assertions, so a
+ * genuine stray write still fails the test.
+ */
+function childEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  delete env["NO_COLOR"];
+  delete env["FORCE_COLOR"];
+  return env;
+}
+
+function runCli(args: string[] = [], stdin = "", env = childEnv()): Run {
   const result = spawnSync(process.execPath, [CLI, ...args], {
     input: stdin,
     encoding: "utf8",
     cwd: ROOT,
+    env,
   });
   return { stdout: result.stdout, stderr: result.stderr, status: result.status };
 }
@@ -88,6 +104,18 @@ test("malformed commands are ignored without corrupting state", () => {
   const run = runCli([dataFile("invalid-input.txt")]);
   expect(run.status).toBe(0);
   expect(lines(run)).toEqual(["1,1,NORTH", "1,1,NORTH", "2,2,EAST"]);
+});
+
+test("output is unaffected by conflicting colour environment variables", () => {
+  // Both set at once is what makes Node warn on startup; the robot's output
+  // must still be exactly the reported coordinates.
+  const run = runCli([dataFile("example-a.txt")], "", {
+    ...process.env,
+    NO_COLOR: "1",
+    FORCE_COLOR: "1",
+  });
+  expect(run.status).toBe(0);
+  expect(lines(run)).toEqual(["0,1,NORTH"]);
 });
 
 test.describe("error handling", () => {

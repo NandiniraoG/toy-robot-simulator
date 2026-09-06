@@ -18,12 +18,16 @@ test.describe("Toy Robot", () => {
   });
 
   test("0.places the robot by clicking a cell", async () => {
-    expect(await robot.isRobotMarkerVisible()).toBe(false);
+    // toBeHidden() also covers "not in the DOM at all", which is the real
+    // pre-PLACE state: the marker is only created once the robot is placed.
+    await expect(robot.robotMarker).toBeHidden();
+    expect(await robot.robotMarkerCount()).toBe(0);
 
     const { x, y, facing } = CLICK_PLACEMENT;
     await robot.placeAt(x, y, facing);
 
-    expect(await robot.isRobotMarkerVisible()).toBe(true);
+    await expect(robot.robotMarker).toBeVisible();
+    expect(await robot.robotMarkerCount()).toBe(1);
     await expect.poll(() => robot.currentState()).toBe(`${x},${y},${facing}`);
   });
 
