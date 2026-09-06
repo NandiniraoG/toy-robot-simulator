@@ -1,5 +1,7 @@
 # Toy Robot Simulator
 
+[![E2E Tests](https://github.com/NandiniraoG/toy-robot-simulator/actions/workflows/e2e.yml/badge.svg)](https://github.com/NandiniraoG/toy-robot-simulator/actions/workflows/e2e.yml)
+
 Browser implementation of the classic 5 x 5 tabletop toy robot exercise.
 
 A toy robot moves on a 5 x 5 unit tabletop. There are no obstructions.
